@@ -18,11 +18,13 @@ const AppRouter = ({ isLoggedIn }) => {
             <Routes>
                 {isLoggedIn ? 
                 <>
+                    {/* 로그인이 되어 있으면 */}
                     <Route path="/" element={<Home />}></Route>
                     <Route path="/profile" element={<Profile />}></Route>
                 </>
                 :
                 <>
+                    {/* 로그인이 되어있지 않다면 */}
                     <Route path="/" element={<Auth />}></Route>
                     <Route path="*" element={<Navigate replace to="/" />}></Route>
                 </>
