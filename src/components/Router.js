@@ -10,7 +10,7 @@ import Auth from "routes/Auth";
 import Home from 'routes/Home';
 import Navigation from "./Navigation";
 
-const AppRouter = ({ isLoggedIn }) => {
+const AppRouter = ({ isLoggedIn, userObj }) => {
     return (
         <Router>
             {/* navigation이 존재하려면 isLoggedIn이 true여야함 */}
@@ -19,7 +19,10 @@ const AppRouter = ({ isLoggedIn }) => {
                 {isLoggedIn ? 
                 <>
                     {/* 로그인이 되어 있으면 */}
-                    <Route path="/" element={<Home />}></Route>
+                    <Route 
+                        path="/" 
+                        element={<Home userObj={userObj}/>}>
+                    </Route>
                     <Route path="/profile" element={<Profile />}></Route>
                 </>
                 :

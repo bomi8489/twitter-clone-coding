@@ -1,40 +1,44 @@
 import { 
     addDoc, 
     collection,
-    getDocs,
+    onSnapshot,
+    orderBy,
     query,
 } from "firebase/firestore";
 import React, {useEffect, useState} from "react";
 import { dbService } from './../fbase';
 
-const Home = () => {
+const Home = ({ userObj }) => {
     const [nweet, setNweet] = useState("");
-    const [nweetArray, setNweetArray] = useState([]);
-
-    const getNweets = async () => {
-        const nweetQuery = query(collection(dbService, "nweets"));
-        const dbNweets = await getDocs(nweetQuery);
-        dbNweets.forEach((document) => {
-            const nweetObj = {
-                ...document.data(),
-                id: document.id,
-            };
-            setNweetArray(prev => [nweetObj, ...prev]);
-        });
-    }
+    const [nweets, setNweets] = useState([]);
 
     useEffect(() => {
-        getNweets();
+        const nweetQuery = query(
+            collection(dbService, "nweets"),
+            orderBy("createdAt", "desc")
+        );
+
+        // onSnapShot: realtime (실시간)
+        onSnapshot(nweetQuery, (snapshot) => {
+            const nweetArray = snapshot.docs.map((doc) => (
+            {
+                id: doc.id,
+                ...doc.data(),
+            }
+            ));
+            setNweets(nweetArray);
+        });
     }, [])
 
-    // nweet form 제출시 firestore db에 추가
+    // form 제출시 firestore db에 추가
     const onSubmit = async (event) => {
         event.preventDefault();
 
-        // firestore 에 collection > document 추가
+        // firestore에 collection > document 추가
         await addDoc(collection(dbService, "nweets"), {
-            nweet,
-            createAt: Date.now(),
+            text: nweet,
+            createdAt: Date.now(),
+            creatorId: userObj.uid,
         })
         setNweet("");
     }
@@ -62,9 +66,9 @@ const Home = () => {
                 />
             </form>
             <div>
-                {nweetArray.map(nweet => (
+                {nweets.map(nweet => (
                     <div key={nweet.id}>
-                        <h4>{nweet.nweet}</h4>
+                        <h4>{nweet.text}</h4>
                     </div>
                 ))}
             </div>
