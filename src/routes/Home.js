@@ -6,13 +6,22 @@ import {
     orderBy,
     query,
 } from "firebase/firestore";
-import React, {useEffect, useState} from "react";
-import { dbService } from './../fbase';
+import { v4 } from "uuid";
+import React, {useEffect, useRef, useState} from "react";
+import { dbService, storageService } from '../fbase';
+import { 
+    ref, 
+    uploadString,
+    getDownloadURL,
+ } from "firebase/storage";
+
 
 // userObj prop은 App 컴포넌트에서 user가 로그인하면 받는 user정보
 const Home = ({ userObj }) => {
     const [nweet, setNweet] = useState("");
     const [nweets, setNweets] = useState([]);
+    const [attachment, setAttachment] = useState("");
+    const fileInput = useRef();
 
     /*
     onSnapShot는 Firebase의 Cloud Firestore에서 제공하는 메소드로 실시간 업데이트를 처리하기 위해 사용.
@@ -42,14 +51,24 @@ const Home = ({ userObj }) => {
     // form 제출시 firestore db에 추가
     const onSubmit = async (event) => {
         event.preventDefault();
+        let attachmentURL = "";
 
-        // firestore에 collection > document 추가
-        await addDoc(collection(dbService, "nweets"), {
+        if(attachment !== ""){
+            const attachmentRef = ref(storageService, `${userObj.uid}/${v4()}`);
+            const response = await uploadString(attachmentRef, attachment, "data_url");
+            attachmentURL = await getDownloadURL(response.ref);
+        }
+
+        const nweetObj = {
             text: nweet,
             createdAt: Date.now(),
             creatorId: userObj.uid,
-        })
+            attachmentURL,
+        };
+        // firestore에 collection > document 추가
+        await addDoc(collection(dbService, "nweets"), nweetObj);
         setNweet("");
+        setAttachment("");
     }
 
     const onChange = (event) => {
@@ -59,6 +78,27 @@ const Home = ({ userObj }) => {
         setNweet(value);
     }
 
+    const onFileChange = (event) => {
+        const {
+            target: {files},
+        } = event;
+
+        //파일리더기로 파일을 읽기
+        const theFile = files[0];
+        const reader = new FileReader();
+        reader.onloadend = (finishedEvent) => {
+            const {
+                currentTarget: {result},
+            } = finishedEvent;
+            setAttachment(result);
+        };
+        reader.readAsDataURL(theFile);
+    }
+
+    const onClearAttachmentClick = () => {
+        setAttachment("");
+        fileInput.current.value = null;
+    }
     return (
         <div>
             <form onSubmit={onSubmit}>
@@ -69,10 +109,14 @@ const Home = ({ userObj }) => {
                     onChange={onChange}
                     value={nweet}
                 />
-                <input 
-                    type="submit"
-                    value="Nweet"
-                />
+                <input type="file" accept="image/*" onChange={onFileChange} ref={fileInput}/>
+                <input type="submit" value="Nweet" />
+                {attachment && (
+                    <div>
+                        <img src={attachment} width="50px" height="50px" alt="preview"/>
+                        <button onClick={onClearAttachmentClick}>CLear</button>
+                    </div>
+                )}
             </form>
             <div>
                 {nweets.map(nweet => (
